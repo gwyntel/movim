@@ -49,7 +49,7 @@
                     {/if}
                     <span title="{$conference->conference}">
                         {if="$conference->mujiPresences->isNotEmpty()"}
-                            <i class="material-symbols call icon {if="$conference->presence->hasMuji()"}green blink{else}blue{/if}" title="{$c->__('visio.in_call')}">call</i>
+                            <i class="material-symbols call icon {if="$conference->presence && $conference->presence->hasMuji()"}green blink{else}blue{/if}" title="{$c->__('visio.in_call')}">call</i>
                         {/if}
                         {$conference->title}
                     </span>
