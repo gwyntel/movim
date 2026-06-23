@@ -136,7 +136,36 @@ var Upload = {
         };
     },
 
+    // Media types that must be uploaded as-is, bypassing the canvas
+    // re-encoding path. Animated GIFs, APNGs, multi-frame sequences and the
+    // modern still-image/video formats below would be flattened to a single
+    // JPEG frame by the canvas draw + toBlob path, losing animation and the
+    // original encoding.
+    passthroughTypes: [
+        'image/gif',
+        'image/apng',
+        'image/webp',
+        'image/heic',
+        'image/heif',
+        'image/av1',
+        'video/av1',
+        'video/webm',
+        'video/x-matroska'
+    ],
+
+    isPassthrough: function (file) {
+        return Upload.passthroughTypes.indexOf(file.type) !== -1;
+    },
+
     compress: function (src, file, orientation) {
+        // Preserve animated GIFs and other modern media formats: skip the
+        // canvas conversion entirely and upload the original file untouched.
+        if (Upload.isPassthrough(file)) {
+            Upload.setCompress(null);
+            Upload.prepare(file);
+            return;
+        }
+
         Upload.setCompress(null);
 
         var image = new Image();
