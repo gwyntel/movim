@@ -126,7 +126,14 @@ var MovimWebsocket = {
             } else if (e.code == 1006) {
                 MovimWebsocket.reconnect();
             } else if (e.code == 1000) {
-                MovimUtils.disconnect();
+                // Only redirect to /disconnect if we're not already on a page
+                // that handles connection state (login, account, etc). This prevents
+                // a redirect loop when the WS closes during page transitions.
+                if (!['login', 'account', 'register', 'tag', 'about', 'community', 'disconnect'].includes(MovimUtils.urlParts().page)) {
+                    MovimUtils.disconnect();
+                } else {
+                    MovimWebsocket.reconnect();
+                }
             }
         };
 

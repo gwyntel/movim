@@ -46,6 +46,7 @@ class Linker
 
     private ?string $timestampSend = null;
     private ?string $timestampReceive = null;
+    private bool $directTLS = false;
 
     public function __construct(
         private LinkersManager $linkersManager,
@@ -64,6 +65,11 @@ class Linker
         $this->authentication = new Authentication;
         $this->locale = new Locale($browserLocale);
         $this->locale->loadTranslations();
+
+        // Initialize timestamps so the periodic killer timer doesn't fire
+        // before the first XMPP data exchange completes
+        $this->timestampSend = (string)time();
+        $this->timestampReceive = (string)time();
 
         // Temporary linker killer
         global $loop;
@@ -206,7 +212,12 @@ class Linker
         $this->connection->on('error', fn() => $this->linkersManager->closeLinker($this->sessionId));
         $this->connection->on('close', fn() => $this->linkersManager->closeLinker($this->sessionId));
 
-        // And we say that we are ready!
+        // Send 'registered' so the browser can send Login_ajaxLogin RPC with
+        // credentials. For DirectTLS, we DON'T send Stream::init here because
+        // ejabberd doesn't accept a stream restart on DirectTLS connections.
+        // doLogin() will send Stream::init after setting the password, which
+        // will be the first (and only) stream init, and SASL auth will fire
+        // immediately because the password is already set.
         $message = new \stdClass;
         $message->registered = true;
         $this->writeOut($message);
@@ -235,12 +246,14 @@ class Linker
                     $host = $results['directtls'][0]['target'];
                     $port = $results['directtls'][0]['port'];
                     $directTLSSocket = true;
+                    $this->directTLS = true;
                     logOut(colorize('Picked DirectTLS', 'blue'), sid: $this->sessionId);
                 }
             } elseif ($results['directtls'] !== false && $results['directtls'][0]['target'] !== '.') {
                 $host = $results['directtls'][0]['target'];
                 $port = $results['directtls'][0]['port'];
                 $directTLSSocket = true;
+                $this->directTLS = true;
                 logOut(colorize('Picked DirectTLS', 'blue'), sid: $this->sessionId);
             } elseif ($results['starttls'] !== false && $results['starttls'][0]['target'] !== '.') {
                 $host = $results['starttls'][0]['target'];
