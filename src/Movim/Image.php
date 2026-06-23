@@ -12,7 +12,7 @@ class Image
     private $_im;
     private $_inMemory = false;
 
-    public static $formats = ['jpeg' => '.jpg', 'png' => '.png', 'webp' => '.webp', 'gif' => '.gif'];
+    public static $formats = ['jpeg' => '.jpg', 'png' => '.png', 'webp' => '.webp', 'gif' => '.gif', 'heic' => '.heic', 'avif' => '.avif'];
     public static $hash = 'sha256'; // Cache need to be cleared in a migration if changed
     private static $originalType = '_o';
 
