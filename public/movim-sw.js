@@ -1,6 +1,45 @@
 var version = 10;
 var cacheKey = 'movim_' + version;
 
+var cacheUrls = [
+    '/scripts/libsignal_protocol.min.js',
+    '/scripts/thumbhash.js',
+    '/scripts/movim_emojis_list.js',
+    '/theme/audio/call.opus',
+    '/theme/audio/message.message',
+    '/theme/audio/user_joined.opus',
+    '/theme/audio/user_left.message',
+    '/theme/fonts/MaterialSymbols/MaterialSymbols-Outlined.woff2',
+    '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmSU5fCRc4EsA.woff2',
+    '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmSU5fABc4EsA.woff2',
+    '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmSU5fCBc4EsA.woff2',
+    '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmSU5fBxc4EsA.woff2',
+    '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmSU5fCxc4EsA.woff2',
+    '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmSU5fChc4EsA.woff2',
+    '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmSU5fBBc4.woff2',
+    '/theme/fonts/Roboto/KFOmCnqEu92Fr1Mu72xKOzY.woff2',
+    '/theme/fonts/Roboto/KFOmCnqEu92Fr1Mu5mxKOzY.woff2',
+    '/theme/fonts/Roboto/KFOmCnqEu92Fr1Mu7mxKOzY.woff2',
+    '/theme/fonts/Roboto/KFOmCnqEu92Fr1Mu4WxKOzY.woff2',
+    '/theme/fonts/Roboto/KFOmCnqEu92Fr1Mu7WxKOzY.woff2',
+    '/theme/fonts/Roboto/KFOmCnqEu92Fr1Mu7GxKOzY.woff2',
+    '/theme/fonts/Roboto/KFOmCnqEu92Fr1Mu4mxK.woff2',
+    '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmEU9fCRc4EsA.woff2',
+    '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmEU9fABc4EsA.woff2',
+    '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmEU9fCBc4EsA.woff2',
+    '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmEU9fBxc4EsA.woff2',
+    '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmEU9fCxc4EsA.woff2',
+    '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmEU9fChc4EsA.woff2',
+    '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmEU9fBBc4.woff2',
+    '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmWUlfCRc4EsA.woff2',
+    '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmWUlfABc4EsA.woff2',
+    '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmWUlfCBc4EsA.woff2',
+    '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmWUlfBxc4EsA.woff2',
+    '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmWUlfCxc4EsA.woff2',
+    '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmWUlfChc4EsA.woff2',
+    '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmWUlfBBc4.woff2',
+];
+
 const channel = new BroadcastChannel('messages');
 
 self.addEventListener('install', (e) => {
@@ -13,44 +52,11 @@ self.addEventListener('install', (e) => {
     });
 
     e.waitUntil(
-        caches.open(cacheKey).then((cache) => cache.addAll([
-            '/scripts/libsignal_protocol.min.js',
-            '/scripts/thumbhash.js',
-            '/scripts/movim_emojis_list.js',
-            '/theme/audio/call.opus',
-            '/theme/audio/message.message',
-            '/theme/audio/user_joined.opus',
-            '/theme/audio/user_left.message',
-            '/theme/fonts/MaterialSymbols/MaterialSymbols-Outlined.woff2',
-            '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmSU5fCRc4EsA.woff2',
-            '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmSU5fABc4EsA.woff2',
-            '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmSU5fCBc4EsA.woff2',
-            '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmSU5fBxc4EsA.woff2',
-            '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmSU5fCxc4EsA.woff2',
-            '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmSU5fChc4EsA.woff2',
-            '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmSU5fBBc4.woff2',
-            '/theme/fonts/Roboto/KFOmCnqEu92Fr1Mu72xKOzY.woff2',
-            '/theme/fonts/Roboto/KFOmCnqEu92Fr1Mu5mxKOzY.woff2',
-            '/theme/fonts/Roboto/KFOmCnqEu92Fr1Mu7mxKOzY.woff2',
-            '/theme/fonts/Roboto/KFOmCnqEu92Fr1Mu4WxKOzY.woff2',
-            '/theme/fonts/Roboto/KFOmCnqEu92Fr1Mu7WxKOzY.woff2',
-            '/theme/fonts/Roboto/KFOmCnqEu92Fr1Mu7GxKOzY.woff2',
-            '/theme/fonts/Roboto/KFOmCnqEu92Fr1Mu4mxK.woff2',
-            '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmEU9fCRc4EsA.woff2',
-            '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmEU9fABc4EsA.woff2',
-            '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmEU9fCBc4EsA.woff2',
-            '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmEU9fBxc4EsA.woff2',
-            '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmEU9fCxc4EsA.woff2',
-            '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmEU9fChc4EsA.woff2',
-            '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmEU9fBBc4.woff2',
-            '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmWUlfCRc4EsA.woff2',
-            '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmWUlfABc4EsA.woff2',
-            '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmWUlfCBc4EsA.woff2',
-            '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmWUlfBxc4EsA.woff2',
-            '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmWUlfCxc4EsA.woff2',
-            '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmWUlfChc4EsA.woff2',
-            '/theme/fonts/Roboto/KFOlCnqEu92Fr1MmWUlfBBc4.woff2',
-        ]))
+        caches.open(cacheKey).then((cache) => Promise.all(
+            cacheUrls.map((url) => cache.add(url).catch((error) => {
+                console.warn('Unable to cache service worker asset', url, error);
+            }))
+        ))
     );
 });
 
@@ -102,6 +108,15 @@ self.addEventListener('notificationclick', function (e) {
 });
 
 self.addEventListener('fetch', (e) => {
+    const url = new URL(e.request.url);
+
+    if (e.request.method !== 'GET'
+        || url.protocol.startsWith('ws')
+        || url.origin !== self.location.origin
+        || !cacheUrls.includes(url.pathname)) {
+        return;
+    }
+
     e.respondWith(
         caches.match(e.request).then((response) => response || fetch(e.request)),
     );
