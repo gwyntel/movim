@@ -12,6 +12,13 @@ var Upload = {
     thumbhash: null,
     uploadButton: null,
 
+    // Hard client-side upload ceiling (1GB). The client no longer disables the
+    // upload button based on the (server-advertised) limit; it only rejects
+    // files above this local ceiling. The actual enforced limit remains on the
+    // server: ejabberd mod_http_upload max_size, nginx client_max_body_size and
+    // PHP upload_max_filesize/post_max_size, all configured at 1GB.
+    sizeLimit: 1024 * 1024 * 1024,
+
     init: function (appendDate) {
         Upload.launchInitiated();
 
@@ -275,7 +282,11 @@ var Upload = {
         }
 
         if (Upload.uploadButton) {
-            if (!document.querySelector('#upload p.limit') || document.querySelector('#upload p.limit').dataset.limit >= file.size) {
+            // The client only rejects files larger than the local 1GB ceiling.
+            // Server-side limits (ejabberd mod_http_upload, nginx, PHP) are the
+            // source of truth and will surface rejections through the existing
+            // upload_request_errorfiletoolarge toast.
+            if (file.size <= Upload.sizeLimit) {
                 Upload.uploadButton.classList.remove('disabled');
             } else {
                 Upload.uploadButton.classList.add('disabled');

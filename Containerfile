@@ -5,6 +5,12 @@ USER root
 # PHP
 RUN install-php-extensions imagick gd bcmath
 
+# Raise the PHP upload limits to match the 1GB cap configured in nginx and
+# ejabberd mod_http_upload so large media uploads are not rejected at the
+# PHP layer before reaching the XMPP HTTP upload service.
+RUN printf "upload_max_filesize = 1024M\npost_max_size = 1024M\nmax_execution_time = 600\nmax_input_time = 600\nmemory_limit = 1024M\n" \
+    > /usr/local/etc/php/conf.d/movim-uploads.ini
+
 # S6
 COPY ./etc/s6-overlay/s6-rc.d/movim-migrations/ /etc/s6-overlay/s6-rc.d/movim-migrations/
 COPY ./etc/s6-overlay/s6-rc.d/movim-daemon/ /etc/s6-overlay/s6-rc.d/movim-daemon/
