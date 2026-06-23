@@ -1,0 +1,256 @@
+name: movim-vps
+
+services:
+  caddy:
+    image: docker.io/library/caddy:2-alpine
+    container_name: movim-caddy
+    restart: unless-stopped
+    depends_on:
+      - hemlock-movim
+      - grimmverse-movim
+    environment:
+      CADDY_EMAIL: ${CADDY_EMAIL:?set CADDY_EMAIL in .env}
+      HEMLOCK_WEB_DOMAIN: ${HEMLOCK_WEB_DOMAIN:-xmpp.gwyn.tel}
+      GRIMMVERSE_WEB_DOMAIN: ${GRIMMVERSE_WEB_DOMAIN:-grimmverse.stupidhimbo.com}
+    ports:
+      - "80:80/tcp"
+      - "443:443/tcp"
+      - "443:443/udp"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    command:
+      - caddy
+      - run
+      - --adapter
+      - caddyfile
+      - --config
+      - /etc/caddy/Caddyfile
+    configs:
+      - source: Caddyfile
+        target: /etc/caddy/Caddyfile
+    networks:
+      - movim
+
+  hemlock-postgres:
+    image: docker.io/library/postgres:18.3-trixie
+    container_name: hemlock-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${HEMLOCK_POSTGRES_USER:-movim}
+      POSTGRES_PASSWORD: ${HEMLOCK_POSTGRES_PASSWORD:?set HEMLOCK_POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${HEMLOCK_POSTGRES_DB:-movim}
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - hemlock_postgres_data:/var/lib/postgresql/data
+    networks:
+      - movim
+
+  hemlock-ejabberd:
+    image: ghcr.io/processone/ejabberd:26.04
+    container_name: hemlock-ejabberd
+    restart: unless-stopped
+    environment:
+      EJABBERD_MACRO_HOST: ${HEMLOCK_XMPP_DOMAIN:-xmpp.gwyn.tel}
+      EJABBERD_MACRO_ADMIN: ${HEMLOCK_EJABBERD_ADMIN_JID:-admin@xmpp.gwyn.tel}
+      REGISTER_ADMIN_PASSWORD: ${HEMLOCK_EJABBERD_ADMIN_PASSWORD:?set HEMLOCK_EJABBERD_ADMIN_PASSWORD in .env}
+      ERLANG_NODE_ARG: ${HEMLOCK_ERLANG_NODE_ARG:-ejabberd@hemlock-ejabberd}
+      ERLANG_COOKIE: ${HEMLOCK_ERLANG_COOKIE:?set HEMLOCK_ERLANG_COOKIE in .env}
+    ports:
+      - "5222:5222/tcp"
+      - "5269:5269/tcp"
+    volumes:
+      - hemlock_ejabberd_conf:/opt/ejabberd/conf
+      - hemlock_ejabberd_database:/opt/ejabberd/database
+      - hemlock_ejabberd_logs:/opt/ejabberd/logs
+      - hemlock_ejabberd_upload:/opt/ejabberd/upload
+    networks:
+      - movim
+
+  hemlock-movim:
+    build:
+      context: .
+      dockerfile: Containerfile
+    container_name: hemlock-movim
+    restart: unless-stopped
+    depends_on:
+      hemlock-postgres:
+        condition: service_healthy
+      hemlock-ejabberd:
+        condition: service_started
+    environment:
+      APP_URL: ${HEMLOCK_APP_URL:-https://xmpp.gwyn.tel}
+      BASE_URI: ${HEMLOCK_APP_URL:-https://xmpp.gwyn.tel}
+      DB_DRIVER: pgsql
+      DB_HOST: hemlock-postgres
+      DB_PORT: 5432
+      DB_USERNAME: ${HEMLOCK_POSTGRES_USER:-movim}
+      DB_PASSWORD: ${HEMLOCK_POSTGRES_PASSWORD:?set HEMLOCK_POSTGRES_PASSWORD in .env}
+      DB_DATABASE: ${HEMLOCK_POSTGRES_DB:-movim}
+      DAEMON_URL: ${HEMLOCK_APP_URL:-https://xmpp.gwyn.tel}
+      DAEMON_INTERFACE: 127.0.0.1
+      DAEMON_PORT: 8083
+      DAEMON_DEBUG: ${HEMLOCK_DAEMON_DEBUG:-false}
+      DAEMON_VERBOSE: ${HEMLOCK_DAEMON_VERBOSE:-false}
+      SSL_MODE: off
+      NGINX_WEBROOT: /var/www/html/public
+      PHP_OPCACHE_ENABLE: 1
+    expose:
+      - "8080"
+    volumes:
+      - hemlock_movim_cache:/var/www/html/cache
+      - hemlock_movim_log:/var/www/html/log
+      - hemlock_movim_public_cache:/var/www/html/public/cache
+      - hemlock_movim_public_images:/var/www/html/public/images
+    networks:
+      - movim
+
+  grimmverse-postgres:
+    image: docker.io/library/postgres:18.3-trixie
+    container_name: grimmverse-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${GRIMMVERSE_POSTGRES_USER:-movim}
+      POSTGRES_PASSWORD: ${GRIMMVERSE_POSTGRES_PASSWORD:?set GRIMMVERSE_POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${GRIMMVERSE_POSTGRES_DB:-movim}
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - grimmverse_postgres_data:/var/lib/postgresql/data
+    networks:
+      - movim
+
+  grimmverse-ejabberd:
+    image: ghcr.io/processone/ejabberd:26.04
+    container_name: grimmverse-ejabberd
+    restart: unless-stopped
+    environment:
+      EJABBERD_MACRO_HOST: ${GRIMMVERSE_XMPP_DOMAIN:-grimmverse.stupidhimbo.com}
+      EJABBERD_MACRO_ADMIN: ${GRIMMVERSE_EJABBERD_ADMIN_JID:-admin@grimmverse.stupidhimbo.com}
+      REGISTER_ADMIN_PASSWORD: ${GRIMMVERSE_EJABBERD_ADMIN_PASSWORD:?set GRIMMVERSE_EJABBERD_ADMIN_PASSWORD in .env}
+      ERLANG_NODE_ARG: ${GRIMMVERSE_ERLANG_NODE_ARG:-ejabberd@grimmverse-ejabberd}
+      ERLANG_COOKIE: ${GRIMMVERSE_ERLANG_COOKIE:?set GRIMMVERSE_ERLANG_COOKIE in .env}
+    ports:
+      - "5223:5222/tcp"
+      - "5270:5269/tcp"
+    volumes:
+      - grimmverse_ejabberd_conf:/opt/ejabberd/conf
+      - grimmverse_ejabberd_database:/opt/ejabberd/database
+      - grimmverse_ejabberd_logs:/opt/ejabberd/logs
+      - grimmverse_ejabberd_upload:/opt/ejabberd/upload
+    networks:
+      - movim
+
+  grimmverse-movim:
+    build:
+      context: .
+      dockerfile: Containerfile
+    container_name: grimmverse-movim
+    restart: unless-stopped
+    depends_on:
+      grimmverse-postgres:
+        condition: service_healthy
+      grimmverse-ejabberd:
+        condition: service_started
+    environment:
+      APP_URL: ${GRIMMVERSE_APP_URL:-https://grimmverse.stupidhimbo.com}
+      BASE_URI: ${GRIMMVERSE_APP_URL:-https://grimmverse.stupidhimbo.com}
+      DB_DRIVER: pgsql
+      DB_HOST: grimmverse-postgres
+      DB_PORT: 5432
+      DB_USERNAME: ${GRIMMVERSE_POSTGRES_USER:-movim}
+      DB_PASSWORD: ${GRIMMVERSE_POSTGRES_PASSWORD:?set GRIMMVERSE_POSTGRES_PASSWORD in .env}
+      DB_DATABASE: ${GRIMMVERSE_POSTGRES_DB:-movim}
+      DAEMON_URL: ${GRIMMVERSE_APP_URL:-https://grimmverse.stupidhimbo.com}
+      DAEMON_INTERFACE: 127.0.0.1
+      DAEMON_PORT: 8083
+      DAEMON_DEBUG: ${GRIMMVERSE_DAEMON_DEBUG:-false}
+      DAEMON_VERBOSE: ${GRIMMVERSE_DAEMON_VERBOSE:-false}
+      SSL_MODE: off
+      NGINX_WEBROOT: /var/www/html/public
+      PHP_OPCACHE_ENABLE: 1
+    expose:
+      - "8080"
+    volumes:
+      - grimmverse_movim_cache:/var/www/html/cache
+      - grimmverse_movim_log:/var/www/html/log
+      - grimmverse_movim_public_cache:/var/www/html/public/cache
+      - grimmverse_movim_public_images:/var/www/html/public/images
+    networks:
+      - movim
+
+networks:
+  movim:
+    name: movim
+    driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:
+  hemlock_postgres_data:
+  hemlock_ejabberd_conf:
+  hemlock_ejabberd_database:
+  hemlock_ejabberd_logs:
+  hemlock_ejabberd_upload:
+  hemlock_movim_cache:
+  hemlock_movim_log:
+  hemlock_movim_public_cache:
+  hemlock_movim_public_images:
+  grimmverse_postgres_data:
+  grimmverse_ejabberd_conf:
+  grimmverse_ejabberd_database:
+  grimmverse_ejabberd_logs:
+  grimmverse_ejabberd_upload:
+  grimmverse_movim_cache:
+  grimmverse_movim_log:
+  grimmverse_movim_public_cache:
+  grimmverse_movim_public_images:
+
+configs:
+  Caddyfile:
+    content: |
+      {
+        email {$CADDY_EMAIL}
+        servers {
+          protocols h1 h2 h3
+        }
+      }
+
+      {$HEMLOCK_WEB_DOMAIN} {
+        encode zstd gzip
+        request_body {
+          max_size 1024MB
+        }
+        reverse_proxy hemlock-movim:8080 {
+          header_up Host {host}
+          header_up X-Real-IP {remote_host}
+          header_up X-Forwarded-For {remote_host}
+          header_up X-Forwarded-Proto {scheme}
+          header_up X-Forwarded-Host {host}
+        }
+      }
+
+      {$GRIMMVERSE_WEB_DOMAIN} {
+        encode zstd gzip
+        request_body {
+          max_size 1024MB
+        }
+        reverse_proxy grimmverse-movim:8080 {
+          header_up Host {host}
+          header_up X-Real-IP {remote_host}
+          header_up X-Forwarded-For {remote_host}
+          header_up X-Forwarded-Proto {scheme}
+          header_up X-Forwarded-Host {host}
+        }
+      }
