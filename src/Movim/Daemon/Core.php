@@ -376,9 +376,14 @@ class Core implements MessageComponentInterface
         $daemonKeyHeader = $connection->httpRequest->getHeader('MOVIM_DAEMON_KEY');
         $secFetchSiteHeader = $connection->httpRequest->getHeader('Sec-Fetch-Site');
 
+        $originHeader = $connection->httpRequest->getHeader('Origin');
+        $originHost = (is_array($originHeader) && !empty($originHeader))
+            ? parse_url($originHeader[0], PHP_URL_HOST)
+            : null;
+
         $sameOrigin = (is_array($secFetchSiteHeader) && !empty($secFetchSiteHeader))
             ? $secFetchSiteHeader[0] == 'same-origin'
-            : parse_url($connection->httpRequest->getHeader('Origin')[0], PHP_URL_HOST) == parse_url($this->baseuri, PHP_URL_HOST);
+            : ($originHost !== null && $originHost == parse_url($this->baseuri, PHP_URL_HOST));
 
         return (is_array($daemonKeyHeader) && !empty($daemonKeyHeader) && $daemonKeyHeader[0] === $this->key)
             || $sameOrigin;
